@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "macrozone",
-    "slug": "macrozone",
+    "name": "sebet",
+    "slug": "sebet",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "macrozone",
+    "scheme": "sebet",
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/expo.icon"
@@ -17,7 +17,8 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "softwareKeyboardLayoutMode": "pan"
     },
     "web": {
       "output": "static",
@@ -39,6 +40,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "owner": "serdarahmanov",
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "a790b2e4-23bf-429f-9b02-c97737cd4bad"
+      }
     }
   }
 }
