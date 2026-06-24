@@ -1,19 +1,16 @@
-import { View, Text, StyleSheet } from "react-native";
+import { StyleSheet, View } from "react-native";
 import Header from "../../components/header";
+import CategoryGrid from "../../components/categories/category-grid";
 
 export default function CategoriesScreen() {
   return (
     <View style={styles.container}>
       <Header />
-      <View style={styles.content}>
-        <Text style={styles.placeholder}>Categories</Text>
-      </View>
+      <CategoryGrid />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff" },
-  content: { flex: 1, alignItems: "center", justifyContent: "center" },
-  placeholder: { fontSize: 18, color: "#999" },
+  container: { flex: 1, backgroundColor: "#F5F5F5" },
 });
