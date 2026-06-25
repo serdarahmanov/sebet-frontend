@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(del *)",
+      "Bash(Get-ChildItem -Recurse -Directory)",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(New-Item -ItemType Directory -Force \"C:\\\\Users\\\\90549\\\\Desktop\\\\Coding\\\\expo\\\\sebet\\\\src\\\\components\\\\home\")",
+      "Bash(Out-Null)",
+      "Bash(Write-Output \"Directory created\")"
+    ]
+  }
+}
