@@ -82,6 +82,7 @@ export default function BasketScreen() {
   const promoDiscount = getPromoDiscount(appliedPromo, basketTotalAfterItemSavings);
   const totalSavings = SAVINGS + promoDiscount;
   const deliveryFee = appliedPromo === "FREESHIP" ? 0 : DELIVERY_FEE;
+  const promoSavings = appliedPromo === "FREESHIP" ? DELIVERY_FEE : promoDiscount;
   const orderTotal = Math.max(0, basketTotalAfterItemSavings - promoDiscount) + deliveryFee;
 
   return (
@@ -133,11 +134,16 @@ export default function BasketScreen() {
         </View>
 
         <PeopleAlsoAdded />
-        <SavingsAndOffers appliedPromo={appliedPromo} onApplyPromo={setAppliedPromo} />
+        <SavingsAndOffers
+          appliedPromo={appliedPromo}
+          promoSavings={promoSavings}
+          onApplyPromo={setAppliedPromo}
+        />
         <Summary
           subtotal={SUBTOTAL}
           savings={totalSavings}
           deliveryFee={deliveryFee}
+          originalDeliveryFee={DELIVERY_FEE}
           total={orderTotal}
         />
       </ScrollView>

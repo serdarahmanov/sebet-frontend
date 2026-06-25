@@ -27,11 +27,13 @@ const PROMO_CODES = [
 
 type SavingsAndOffersProps = {
   appliedPromo: string;
+  promoSavings: number;
   onApplyPromo: (promoCode: string) => void;
 };
 
 export default function SavingsAndOffers({
   appliedPromo,
+  promoSavings,
   onApplyPromo,
 }: SavingsAndOffersProps) {
   const insets = useSafeAreaInsets();
@@ -84,9 +86,18 @@ export default function SavingsAndOffers({
         <View style={styles.divider} />
         <TouchableOpacity style={styles.promoRow} activeOpacity={0.7} onPress={openSheet}>
           <Ionicons name="ticket-outline" size={20} color="#AAAAAA" />
-          <Text style={[styles.promoLabel, appliedPromo ? styles.promoLabelActive : null]}>
-            {appliedPromo ? appliedPromo : "Enter a promo code"}
-          </Text>
+          <View style={styles.promoText}>
+            <Text style={[styles.promoLabel, appliedPromo ? styles.promoLabelActive : null]}>
+              {appliedPromo ? appliedPromo : "Enter a promo code"}
+            </Text>
+            {appliedPromo && promoSavings > 0 && (
+              <Text style={styles.promoSavingAmount}>
+                {appliedPromo === "FREESHIP"
+                  ? "Free delivery from this promo code"
+                  : `£${promoSavings.toFixed(2)} saved from this promo code`}
+              </Text>
+            )}
+          </View>
           <Ionicons name="chevron-forward" size={18} color="#AAAAAA" />
         </TouchableOpacity>
       </View>
@@ -299,13 +310,21 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
   },
   promoLabel: {
-    flex: 1,
     fontSize: 14,
     color: "#AAAAAA",
+  },
+  promoText: {
+    flex: 1,
+    gap: 3,
   },
   promoLabelActive: {
     color: "#1A1A1A",
     fontWeight: "500",
+  },
+  promoSavingAmount: {
+    fontSize: 11,
+    fontWeight: "400",
+    color: "#AAAAAA",
   },
   claimBtn: {
     fontSize: 13,

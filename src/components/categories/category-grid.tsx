@@ -1,40 +1,83 @@
 import {
   Image,
+  ImageSourcePropType,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 
-type Category = {
+export type Category = {
   id: string;
+  slug: string;
   name: string;
-  image: string;
+  image?: ImageSourcePropType;
+  icon?: keyof typeof Ionicons.glyphMap;
 };
 
-const CATEGORIES: Category[] = [
-  { id: "1",  name: "Vegetables",    image: "https://placehold.co/120x120/F5F5F5/999?text=+" },
-  { id: "2",  name: "Fruit",         image: "https://placehold.co/120x120/F5F5F5/999?text=+" },
-  { id: "3",  name: "Meat & Fish",   image: "https://placehold.co/120x120/F5F5F5/999?text=+" },
-  { id: "4",  name: "Eggs & Dairy",  image: "https://placehold.co/120x120/F5F5F5/999?text=+" },
-  { id: "5",  name: "Bakery",        image: "https://placehold.co/120x120/F5F5F5/999?text=+" },
-  { id: "6",  name: "Frozen",        image: "https://placehold.co/120x120/F5F5F5/999?text=+" },
-  { id: "7",  name: "Soft Drinks",   image: "https://placehold.co/120x120/F5F5F5/999?text=+" },
-  { id: "8",  name: "Snacks",        image: "https://placehold.co/120x120/F5F5F5/999?text=+" },
-  { id: "9",  name: "Ready Meals",   image: "https://placehold.co/120x120/F5F5F5/999?text=+" },
-  { id: "10", name: "Cheese",        image: "https://placehold.co/120x120/F5F5F5/999?text=+" },
-  { id: "11", name: "Household",     image: "https://placehold.co/120x120/F5F5F5/999?text=+" },
-  { id: "12", name: "Baby",          image: "https://placehold.co/120x120/F5F5F5/999?text=+" },
-  { id: "13", name: "Pet",           image: "https://placehold.co/120x120/F5F5F5/999?text=+" },
+export const CATEGORIES: Category[] = [
+  { id: "1", slug: "vegetables", name: "Vegetables", image: require("../../../public/categories/category thumbnails/Vegs.webp") },
+  { id: "2", slug: "fruit", name: "Fruit", image: require("../../../public/categories/category thumbnails/Fruits.webp") },
+  { id: "3", slug: "meat-and-fish", name: "Meat & Fish", image: require("../../../public/categories/category thumbnails/Fish and Meat.webp") },
+  { id: "4", slug: "eggs-and-dairy", name: "Eggs & Dairy", image: require("../../../public/categories/category thumbnails/Dairy & eggs.webp") },
+  { id: "5", slug: "bakery", name: "Bakery", image: require("../../../public/categories/category thumbnails/Bakery.webp") },
+  { id: "6", slug: "frozen", name: "Frozen", image: require("../../../public/categories/category thumbnails/Frozen.webp") },
+  { id: "7", slug: "soft-drinks", name: "Soft Drinks", image: require("../../../public/categories/category thumbnails/Soft Drinks.webp") },
+  { id: "8", slug: "snacks", name: "Snacks", image: require("../../../public/categories/category thumbnails/Snacks.webp") },
+  { id: "9", slug: "ready-meals", name: "Ready Meals", image: require("../../../public/categories/category thumbnails/Ready Food.webp") },
+  { id: "10", slug: "cheese", name: "Cheese", image: require("../../../public/categories/category thumbnails/Cheese.webp") },
+  { id: "11", slug: "household", name: "Household", image: require("../../../public/categories/category thumbnails/Cleaning.webp") },
+  { id: "12", slug: "baby", name: "Baby", image: require("../../../public/categories/category thumbnails/Baby.webp") },
+  { id: "13", slug: "pet", name: "Pet", image: require("../../../public/categories/category thumbnails/Pet.webp") },
+  { id: "14", slug: "health-and-beauty", name: "Health & Beauty", icon: "sparkles-outline" },
+  { id: "15", slug: "jam-honey-and-spreads", name: "Jam, Honey, Spreads", icon: "nutrition-outline" },
+  { id: "16", slug: "tea-coffee-and-hot-drinks", name: "Tea, Coffee, Hot Drinks", icon: "cafe-outline" },
+  { id: "17", slug: "rice-pasta-and-noodles", name: "Rice, Pasta, Noodles", icon: "restaurant-outline" },
+  { id: "18", slug: "sugar-flour-and-baking", name: "Sugar, Flour, Baking", icon: "scale-outline" },
+  { id: "19", slug: "ice-cream", name: "Ice Cream", icon: "ice-cream-outline" },
+  { id: "20", slug: "desserts", name: "Desserts", icon: "restaurant-outline" },
+  { id: "21", slug: "crisps-snacks-and-biscuits", name: "Crisps, Snacks, Biscuits", icon: "fast-food-outline" },
+  { id: "22", slug: "cooking-sauces-and-ingredients", name: "Cooking Sauces & Ingredients", icon: "flask-outline" },
+  { id: "23", slug: "table-sauces-and-condiments", name: "Table Sauces & Condiments", icon: "water-outline" },
+  { id: "24", slug: "cans-and-tins", name: "Cans & Tins", icon: "cube-outline" },
+  { id: "25", slug: "cereal-and-cereal-bars", name: "Cereal & Cereal Bars", icon: "sunny-outline" },
 ];
 
 const COLUMNS = 3;
 
 function CategoryCard({ item }: { item: Category }) {
+  const router = useRouter();
+
   return (
-    <TouchableOpacity style={styles.card} activeOpacity={0.75}>
-      <Image source={{ uri: item.image }} style={styles.image} resizeMode="contain" />
-      <Text style={styles.name} numberOfLines={2}>{item.name}</Text>
+    <TouchableOpacity
+      style={styles.card}
+      activeOpacity={0.75}
+      onPress={() =>
+        router.push({
+          pathname: "/category/[slug]",
+          params: { slug: item.slug },
+        })
+      }
+      accessibilityRole="button"
+      accessibilityLabel={`Open ${item.name} category`}
+    >
+      <View style={styles.imageFrame}>
+        {item.image ? (
+          <Image source={item.image} style={styles.image} resizeMode="cover" />
+        ) : (
+          <Ionicons
+            name={item.icon ?? "basket-outline"}
+            size={46}
+            color="#38a3a5"
+          />
+        )}
+      </View>
+      <View style={styles.labelFrame}>
+        <Text style={styles.name} numberOfLines={2}>{item.name}</Text>
+      </View>
     </TouchableOpacity>
   );
 }
@@ -46,7 +89,10 @@ export default function CategoryGrid() {
   }
 
   return (
-    <View style={styles.grid}>
+    <ScrollView
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={styles.grid}
+    >
       {rows.map((row, rowIndex) => (
         <View key={rowIndex} style={styles.row}>
           {row.map((item) => (
@@ -54,35 +100,56 @@ export default function CategoryGrid() {
           ))}
           {row.length < COLUMNS &&
             Array.from({ length: COLUMNS - row.length }).map((_, i) => (
-              <View key={`spacer-${i}`} style={styles.card} />
+              <View key={`spacer-${i}`} style={styles.spacer} />
             ))}
         </View>
       ))}
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   grid: {
-    flex: 1,
     padding: 12,
-    gap: 8,
+    paddingBottom: 24,
+    gap: 12,
   },
   row: {
-    flex: 1,
     flexDirection: "row",
-    gap: 8,
+    gap: 12,
   },
   card: {
     flex: 1,
+    minWidth: 0,
+    height: 142,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#EEEEEE",
+    borderRadius: 10,
+    overflow: "hidden",
+  },
+  spacer: {
+    flex: 1,
+    minWidth: 0,
+  },
+  imageFrame: {
+    height: 104,
+    backgroundColor: "#FFFFFF",
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
-    paddingVertical: 8,
+    overflow: "hidden",
   },
   image: {
-    width: "65%",
-    aspectRatio: 1,
+    width: "100%",
+    height: "100%",
+  },
+  labelFrame: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 6,
+    borderTopWidth: 1,
+    borderTopColor: "#F4F4F4",
   },
   name: {
     fontSize: 12,

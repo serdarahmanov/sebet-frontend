@@ -94,6 +94,12 @@ export default function TabsLayout() {
             ),
           }}
         />
+        <Tabs.Screen
+          name="category/[slug]"
+          options={{
+            href: null,
+          }}
+        />
       </Tabs>
 
       <BottomSheetModal
