@@ -45,4 +45,10 @@ example
 
 # public folder 
 /public/
+
+
+
+
 .claude/
+CLAUDE.md
+AGENTS.md
