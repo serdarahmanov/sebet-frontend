@@ -5,10 +5,14 @@ import {
   BottomSheetModal,
   BottomSheetView,
 } from "@gorhom/bottom-sheet";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  LayoutChangeEvent,
+  FlashList,
+  FlashListRef,
+  ListRenderItemInfo,
+} from "@shopify/flash-list";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
   Modal,
   NativeScrollEvent,
   NativeSyntheticEvent,
@@ -17,6 +21,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -26,109 +31,30 @@ import {
   Product,
   ProductCard,
 } from "../../components/home/buy-it-again";
-
-type FruitSection = {
-  id: string;
-  title: string;
-  items: Product[];
-};
+import { FRUIT_SECTIONS } from "../../data/categories/fruit/data";
 
 type CategoryLink = {
   name: string;
   slug: string;
 };
 
-function fruitProduct(
-  id: string,
-  name: string,
-  price: number,
-  unit: string,
-  color: string,
-  label: string,
-  originalPrice?: number,
-): Product {
-  return {
-    id,
-    name,
-    price,
-    originalPrice,
-    unit,
-    image: `https://placehold.co/240x240/${color}/333333?text=${encodeURIComponent(label)}`,
-  };
-}
+type FruitListItem =
+  | {
+      type: "header";
+      id: string;
+      sectionId: string;
+      title: string;
+    }
+  | {
+      type: "product";
+      id: string;
+      sectionId: string;
+      product: Product;
+    };
 
-const FRUIT_SECTIONS: FruitSection[] = [
-  {
-    id: "offers",
-    title: "Offers",
-    items: [
-      fruitProduct("offers-strawberries", "Sweet Strawberries", 2.25, "400g", "FFF3F3", "Strawberries", 3),
-      fruitProduct("offers-bananas", "Fairtrade Bananas", 1.15, "5 pack", "FFFBEA", "Bananas", 1.45),
-      fruitProduct("offers-grapes", "Seedless Green Grapes", 2, "500g", "F3FAED", "Grapes", 2.75),
-      fruitProduct("offers-oranges", "Sweet Easy Peelers", 1.75, "600g", "FFF6E8", "Oranges", 2.25),
-    ],
-  },
-  {
-    id: "berries",
-    title: "Berries",
-    items: [
-      fruitProduct("berries-strawberries", "British Strawberries", 3, "400g", "FFF3F3", "Strawberries"),
-      fruitProduct("berries-blueberries", "Sweet Blueberries", 2.5, "150g", "F2F1FF", "Blueberries"),
-      fruitProduct("berries-raspberries", "Ripe Raspberries", 2.75, "150g", "FFF1F5", "Raspberries"),
-      fruitProduct("berries-mixed", "Mixed Berry Selection", 4, "300g", "F7F1FF", "Mixed Berries"),
-    ],
-  },
-  {
-    id: "bananas",
-    title: "Bananas",
-    items: [
-      fruitProduct("bananas-loose", "Loose Bananas", 0.85, "1kg", "FFFBEA", "Loose Bananas"),
-      fruitProduct("bananas-pack", "Banana Pack", 1.15, "5 pack", "FFFBEA", "Banana Pack"),
-      fruitProduct("bananas-organic", "Organic Fairtrade Bananas", 1.65, "5 pack", "F5FAE9", "Organic"),
-      fruitProduct("bananas-mini", "Sweet Mini Bananas", 1.8, "250g", "FFF7D6", "Mini Bananas"),
-    ],
-  },
-  {
-    id: "citrus-fruit",
-    title: "Citrus Fruit",
-    items: [
-      fruitProduct("citrus-oranges", "Large Sweet Oranges", 2.25, "5 pack", "FFF4E5", "Oranges"),
-      fruitProduct("citrus-lemons", "Unwaxed Lemons", 1.2, "4 pack", "FFFDE7", "Lemons"),
-      fruitProduct("citrus-limes", "Fresh Limes", 1, "4 pack", "F1F9E8", "Limes"),
-      fruitProduct("citrus-grapefruit", "Pink Grapefruit", 0.9, "each", "FFF0ED", "Grapefruit"),
-    ],
-  },
-  {
-    id: "apples-and-pears",
-    title: "Apples & Pears",
-    items: [
-      fruitProduct("apples-red", "Royal Gala Apples", 2, "6 pack", "FFF0F0", "Red Apples"),
-      fruitProduct("apples-green", "Granny Smith Apples", 2.1, "6 pack", "F1F9E8", "Green Apples"),
-      fruitProduct("pears-conference", "Conference Pears", 1.8, "5 pack", "F5F7E8", "Pears"),
-      fruitProduct("pears-ripe", "Perfectly Ripe Pears", 2.25, "4 pack", "FAF5DF", "Ripe Pears"),
-    ],
-  },
-  {
-    id: "grapes",
-    title: "Grapes",
-    items: [
-      fruitProduct("grapes-green", "Seedless Green Grapes", 2.75, "500g", "F3FAED", "Green Grapes"),
-      fruitProduct("grapes-red", "Seedless Red Grapes", 2.75, "500g", "FFF0F3", "Red Grapes"),
-      fruitProduct("grapes-black", "Sweet Black Grapes", 3, "500g", "F4F0F8", "Black Grapes"),
-      fruitProduct("grapes-mixed", "Mixed Seedless Grapes", 3.25, "500g", "F6F2F4", "Mixed Grapes"),
-    ],
-  },
-  {
-    id: "other-fruit",
-    title: "Other Fruit",
-    items: [
-      fruitProduct("other-mango", "Ripe Mango", 1.5, "each", "FFF3DF", "Mango"),
-      fruitProduct("other-pineapple", "Extra Sweet Pineapple", 2, "each", "FFF8D9", "Pineapple"),
-      fruitProduct("other-melon", "Galia Melon", 2.25, "each", "F2F9DF", "Melon"),
-      fruitProduct("other-peaches", "Ripe & Ready Peaches", 2.5, "4 pack", "FFF0E8", "Peaches"),
-    ],
-  },
-];
+const SECTION_ACTIVATION_OFFSET = 8;
+const MIN_LIST_BOTTOM_PADDING = 32;
+
 
 export function generateStaticParams() {
   return CATEGORIES.map((category) => ({ slug: category.slug }));
@@ -167,18 +93,77 @@ function NextCategoryButton({ category }: { category: CategoryLink }) {
 
 function FruitCategoryContent({
   nextCategory,
+  searchQuery,
+  isSearching,
 }: {
   nextCategory: CategoryLink;
+  searchQuery: string;
+  isSearching: boolean;
 }) {
-  const contentRef = useRef<ScrollView>(null);
+  const contentRef = useRef<FlashListRef<FruitListItem>>(null);
   const filterRef = useRef<ScrollView>(null);
   const categorySheetRef = useRef<BottomSheetModal>(null);
-  const sectionOffsets = useRef<Record<string, number>>({});
   const tabLayouts = useRef<Record<string, { x: number; width: number }>>({});
+  const isSearchingRef = useRef(isSearching);
   const isProgrammaticScroll = useRef(false);
-  const scrollReleaseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const programmaticReleaseTimer = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
   const [activeSection, setActiveSection] = useState(FRUIT_SECTIONS[0].id);
   const [isCategoryListOpen, setIsCategoryListOpen] = useState(false);
+  const [listViewportHeight, setListViewportHeight] = useState(0);
+  const [isListMeasured, setIsListMeasured] = useState(false);
+  const [listBottomPadding, setListBottomPadding] = useState(
+    MIN_LIST_BOTTOM_PADDING,
+  );
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const visibleSections = useMemo(
+    () =>
+      isSearching
+        ? FRUIT_SECTIONS.map((section) => ({
+            ...section,
+            items: section.title.toLowerCase().includes(normalizedQuery)
+              ? section.items
+              : section.items.filter(
+                  (item) =>
+                    item.name.toLowerCase().includes(normalizedQuery) ||
+                    item.unit.toLowerCase().includes(normalizedQuery),
+                ),
+          })).filter((section) => section.items.length > 0)
+        : FRUIT_SECTIONS,
+    [isSearching, normalizedQuery],
+  );
+  const resultCount = visibleSections.reduce(
+    (total, section) => total + section.items.length,
+    0,
+  );
+  const listData = useMemo(
+    () =>
+      visibleSections.flatMap<FruitListItem>((section) => [
+        {
+          type: "header",
+          id: `header-${section.id}`,
+          sectionId: section.id,
+          title: section.title,
+        },
+        ...section.items.map<FruitListItem>((product) => ({
+          type: "product",
+          id: product.id,
+          sectionId: section.id,
+          product,
+        })),
+      ]),
+    [visibleSections],
+  );
+  const sectionStartIndices = useMemo(() => {
+    const indices: Record<string, number> = {};
+    listData.forEach((item, index) => {
+      if (item.type === "header") {
+        indices[item.sectionId] = index;
+      }
+    });
+    return indices;
+  }, [listData]);
 
   const renderCategorySheetBackdrop = useCallback(
     (props: BottomSheetBackdropProps) => (
@@ -207,29 +192,104 @@ function FruitCategoryContent({
     alignActiveTabToLeft(activeSection);
   }, [activeSection, alignActiveTabToLeft]);
 
+  useEffect(() => {
+    isSearchingRef.current = isSearching;
+  }, [isSearching]);
+
+  useEffect(() => {
+    if (isSearching) {
+      setListBottomPadding(MIN_LIST_BOTTOM_PADDING);
+      return;
+    }
+
+    const lastSection = FRUIT_SECTIONS[FRUIT_SECTIONS.length - 1];
+    const lastHeaderIndex = sectionStartIndices[lastSection.id];
+    const lastHeaderLayout =
+      lastHeaderIndex == null
+        ? undefined
+        : contentRef.current?.getLayout(lastHeaderIndex);
+    const lastItemLayout =
+      listData.length === 0
+        ? undefined
+        : contentRef.current?.getLayout(listData.length - 1);
+
+    if (
+      !lastHeaderLayout ||
+      !lastItemLayout ||
+      listViewportHeight === 0 ||
+      !isListMeasured
+    ) {
+      return;
+    }
+
+    const contentEnd = lastItemLayout.y + lastItemLayout.height;
+    const contentAfterLastHeader = contentEnd - lastHeaderLayout.y;
+    const requiredPadding = Math.max(
+      MIN_LIST_BOTTOM_PADDING,
+      listViewportHeight -
+        SECTION_ACTIVATION_OFFSET -
+        contentAfterLastHeader,
+    );
+
+    if (Math.abs(requiredPadding - listBottomPadding) > 1) {
+      setListBottomPadding(requiredPadding);
+    }
+  }, [
+    isSearching,
+    isListMeasured,
+    listBottomPadding,
+    listViewportHeight,
+    listData,
+    sectionStartIndices,
+  ]);
+
   useEffect(
     () => () => {
-      if (scrollReleaseTimer.current) {
-        clearTimeout(scrollReleaseTimer.current);
+      if (programmaticReleaseTimer.current) {
+        clearTimeout(programmaticReleaseTimer.current);
       }
     },
     [],
   );
 
-  const selectSection = (sectionId: string) => {
-    const y = sectionOffsets.current[sectionId];
-    if (y == null) return;
+  const releaseProgrammaticScroll = useCallback(() => {
+    isProgrammaticScroll.current = false;
+    if (programmaticReleaseTimer.current) {
+      clearTimeout(programmaticReleaseTimer.current);
+      programmaticReleaseTimer.current = null;
+    }
+  }, []);
+
+  const selectSection = async (sectionId: string) => {
+    const index = sectionStartIndices[sectionId];
+    if (index == null) return;
 
     isProgrammaticScroll.current = true;
     setActiveSection(sectionId);
-    contentRef.current?.scrollTo({ y, animated: true });
 
-    if (scrollReleaseTimer.current) {
-      clearTimeout(scrollReleaseTimer.current);
+    const headerLayout = contentRef.current?.getLayout(index);
+    if (headerLayout) {
+      contentRef.current?.scrollToOffset({
+        offset: Math.max(0, headerLayout.y - SECTION_ACTIVATION_OFFSET),
+        animated: true,
+        skipFirstItemOffset: true,
+      });
+    } else {
+      await contentRef.current?.scrollToIndex({
+        index,
+        animated: true,
+        viewPosition: 0,
+        viewOffset: SECTION_ACTIVATION_OFFSET,
+      });
     }
-    scrollReleaseTimer.current = setTimeout(() => {
-      isProgrammaticScroll.current = false;
-    }, 500);
+
+    if (programmaticReleaseTimer.current) {
+      clearTimeout(programmaticReleaseTimer.current);
+    }
+    programmaticReleaseTimer.current = setTimeout(
+      releaseProgrammaticScroll,
+      700,
+    );
   };
 
   const openCategoryList = () => {
@@ -302,39 +362,67 @@ function FruitCategoryContent({
     </View>
   );
 
-  const handleContentScroll = (
-    event: NativeSyntheticEvent<NativeScrollEvent>,
-  ) => {
-    if (isProgrammaticScroll.current) return;
+  const handleListScroll = useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      if (isSearchingRef.current || isProgrammaticScroll.current) return;
 
-    const { contentOffset, contentSize, layoutMeasurement } =
-      event.nativeEvent;
-    const isAtBottom =
-      contentOffset.y + layoutMeasurement.height >= contentSize.height - 24;
-    const scrollPosition = contentOffset.y + 24;
-    let nextActive = FRUIT_SECTIONS[0].id;
+      const { contentOffset, contentSize, layoutMeasurement } =
+        event.nativeEvent;
+      const isAtBottom =
+        contentOffset.y + layoutMeasurement.height >=
+        contentSize.height - SECTION_ACTIVATION_OFFSET;
+      let nextSectionId = FRUIT_SECTIONS[0].id;
 
-    if (isAtBottom) {
-      nextActive = FRUIT_SECTIONS[FRUIT_SECTIONS.length - 1].id;
-    } else {
-      for (const section of FRUIT_SECTIONS) {
-        const sectionY = sectionOffsets.current[section.id];
-        if (sectionY != null && sectionY <= scrollPosition) {
-          nextActive = section.id;
-        } else {
-          break;
+      if (isAtBottom) {
+        nextSectionId = FRUIT_SECTIONS[FRUIT_SECTIONS.length - 1].id;
+      } else {
+        const activationLine =
+          contentOffset.y + SECTION_ACTIVATION_OFFSET;
+
+        for (const section of FRUIT_SECTIONS) {
+          const headerIndex = sectionStartIndices[section.id];
+          const headerLayout =
+            headerIndex == null
+              ? undefined
+              : contentRef.current?.getLayout(headerIndex);
+
+          if (headerLayout && headerLayout.y <= activationLine) {
+            nextSectionId = section.id;
+          } else if (headerLayout) {
+            break;
+          }
         }
       }
-    }
 
-    if (nextActive !== activeSection) {
-      setActiveSection(nextActive);
-    }
-  };
+      setActiveSection((current) =>
+        current === nextSectionId ? current : nextSectionId,
+      );
+    },
+    [sectionStartIndices],
+  );
+
+  const renderFruitItem = useCallback(
+    ({ item }: ListRenderItemInfo<FruitListItem>) => {
+      if (item.type === "header") {
+        return <Text style={styles.sectionTitle}>{item.title}</Text>;
+      }
+
+      return (
+        <View style={styles.productGridItem}>
+          <ProductCard
+            item={item.product}
+            style={styles.gridProductCard}
+            compact
+          />
+        </View>
+      );
+    },
+    [],
+  );
 
   return (
     <View style={styles.fruitContent}>
-      <View style={styles.filterBar}>
+      {!isSearching && <View style={styles.filterBar}>
         <View style={styles.filterScrollContainer}>
           <ScrollView
             ref={filterRef}
@@ -405,44 +493,63 @@ function FruitCategoryContent({
         >
           <Ionicons name="ellipsis-horizontal" size={24} color="#247E80" />
         </TouchableOpacity>
-      </View>
+      </View>}
 
-      <ScrollView
+      {isSearching && (
+        <View style={styles.searchSummary}>
+          <Text style={styles.searchSummaryText}>
+            {normalizedQuery
+              ? `${resultCount} ${resultCount === 1 ? "result" : "results"}`
+              : "All products"}
+          </Text>
+        </View>
+      )}
+
+      <FlashList
         ref={contentRef}
-        style={styles.sectionScroll}
-        contentContainerStyle={styles.sectionContent}
-        showsVerticalScrollIndicator
-        onScroll={handleContentScroll}
-        onScrollBeginDrag={() => {
-          isProgrammaticScroll.current = false;
+        data={listData}
+        renderItem={renderFruitItem}
+        keyExtractor={(item) => item.id}
+        numColumns={3}
+        getItemType={(item) => item.type}
+        overrideItemLayout={(layout, item) => {
+          if (item.type === "header") {
+            layout.span = 3;
+          }
         }}
+        style={styles.sectionScroll}
+        contentContainerStyle={[
+          styles.sectionContent,
+          {
+            paddingBottom: listBottomPadding,
+          },
+        ]}
+        onLayout={(event) => {
+          setListViewportHeight(event.nativeEvent.layout.height);
+        }}
+        onLoad={() => setIsListMeasured(true)}
+        showsVerticalScrollIndicator
+        onScroll={handleListScroll}
+        onScrollBeginDrag={() => {
+          releaseProgrammaticScroll();
+        }}
+        onMomentumScrollEnd={releaseProgrammaticScroll}
         scrollEventThrottle={16}
-      >
-        {FRUIT_SECTIONS.map((section) => (
-          <View
-            key={section.id}
-            style={styles.fruitSection}
-            onLayout={(event: LayoutChangeEvent) => {
-              sectionOffsets.current[section.id] =
-                event.nativeEvent.layout.y;
-            }}
-          >
-            <Text style={styles.sectionTitle}>{section.title}</Text>
-            <View style={styles.productGrid}>
-              {section.items.map((item) => (
-                <View key={item.id} style={styles.productGridItem}>
-                  <ProductCard
-                    item={item}
-                    style={styles.gridProductCard}
-                    compact
-                  />
-                </View>
-              ))}
-            </View>
+        ListEmptyComponent={
+          isSearching ? (
+          <View style={styles.emptySearch}>
+            <Ionicons name="search-outline" size={34} color="#A7ACAF" />
+            <Text style={styles.emptySearchTitle}>No products found</Text>
+            <Text style={styles.emptySearchText}>
+              Try a different product name.
+            </Text>
           </View>
-        ))}
-        <NextCategoryButton category={nextCategory} />
-      </ScrollView>
+          ) : null
+        }
+        ListFooterComponent={
+          !isSearching ? <NextCategoryButton category={nextCategory} /> : null
+        }
+      />
 
       {Platform.OS === "android" ? (
         <BottomSheetModal
@@ -498,6 +605,9 @@ export default function CategoryScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const searchInputRef = useRef<TextInput>(null);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const category = CATEGORIES.find((item) => item.slug === slug);
   const categoryIndex = CATEGORIES.findIndex((item) => item.slug === slug);
   const defaultNextCategory =
@@ -507,12 +617,33 @@ export default function CategoryScreen() {
       ? CATEGORIES.find((item) => item.slug === "vegetables")!
       : defaultNextCategory;
 
+  useEffect(() => {
+    if (isSearching) {
+      const focusTimer = setTimeout(() => searchInputRef.current?.focus(), 50);
+      return () => clearTimeout(focusTimer);
+    }
+  }, [isSearching]);
+
+  const closeSearch = () => {
+    setSearchQuery("");
+    setIsSearching(false);
+  };
+
+  const handleBack = () => {
+    if (isSearching) {
+      closeSearch();
+      return;
+    }
+
+    router.back();
+  };
+
   return (
     <View style={styles.screen}>
       <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
         <TouchableOpacity
           style={styles.iconButton}
-          onPress={() => router.back()}
+          onPress={handleBack}
           activeOpacity={0.7}
           accessibilityRole="button"
           accessibilityLabel="Go back"
@@ -520,29 +651,74 @@ export default function CategoryScreen() {
           <Ionicons name="chevron-back" size={26} color="#1A1A1A" />
         </TouchableOpacity>
 
-        <Text style={styles.title} numberOfLines={1}>
-          {category?.name ?? "Category"}
-        </Text>
+        {isSearching ? (
+          <View style={styles.searchInputContainer}>
+            <Ionicons name="search-outline" size={20} color="#74797D" />
+            <TextInput
+              ref={searchInputRef}
+              style={styles.searchInput}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder={`Search ${category?.name ?? "category"}`}
+              placeholderTextColor="#989DA1"
+              returnKeyType="search"
+              autoCorrect={false}
+              accessibilityLabel={`Search in ${category?.name ?? "category"}`}
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity
+                style={styles.clearSearchButton}
+                onPress={() => setSearchQuery("")}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel="Clear search"
+              >
+                <Ionicons name="close-circle" size={20} color="#8A8F93" />
+              </TouchableOpacity>
+            )}
+          </View>
+        ) : (
+          <>
+            <Text style={styles.title} numberOfLines={1}>
+              {category?.name ?? "Category"}
+            </Text>
 
-        <TouchableOpacity
-          style={styles.iconButton}
-          activeOpacity={0.7}
-          accessibilityRole="button"
-          accessibilityLabel={`Search in ${category?.name ?? "category"}`}
-        >
-          <Ionicons name="search-outline" size={25} color="#1A1A1A" />
-        </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.iconButton}
+              onPress={() => setIsSearching(true)}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel={`Search in ${category?.name ?? "category"}`}
+            >
+              <Ionicons name="search-outline" size={25} color="#1A1A1A" />
+            </TouchableOpacity>
+          </>
+        )}
       </View>
 
       {slug === "fruit" ? (
-        <FruitCategoryContent nextCategory={nextCategory} />
+        <FruitCategoryContent
+          nextCategory={nextCategory}
+          searchQuery={searchQuery}
+          isSearching={isSearching}
+        />
       ) : (
         <ScrollView
           style={styles.sectionScroll}
           contentContainerStyle={styles.genericCategoryContent}
           showsVerticalScrollIndicator
         >
-          <NextCategoryButton category={nextCategory} />
+          {isSearching ? (
+            <View style={styles.emptySearch}>
+              <Ionicons name="search-outline" size={34} color="#A7ACAF" />
+              <Text style={styles.emptySearchTitle}>No products found</Text>
+              <Text style={styles.emptySearchText}>
+                Products have not been added to this category yet.
+              </Text>
+            </View>
+          ) : (
+            <NextCategoryButton category={nextCategory} />
+          )}
         </ScrollView>
       )}
     </View>
@@ -574,6 +750,29 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#1A1A1A",
     textAlign: "center",
+  },
+  searchInputContainer: {
+    flex: 1,
+    height: 40,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    backgroundColor: "#F1F3F3",
+  },
+  searchInput: {
+    flex: 1,
+    height: 40,
+    paddingHorizontal: 8,
+    paddingVertical: 0,
+    fontSize: 16,
+    color: "#111111",
+  },
+  clearSearchButton: {
+    width: 30,
+    height: 36,
+    alignItems: "center",
+    justifyContent: "center",
   },
   fruitContent: {
     flex: 1,
@@ -648,6 +847,19 @@ const styles = StyleSheet.create({
   filterFadeStep: {
     flex: 1,
   },
+  searchSummary: {
+    minHeight: 38,
+    justifyContent: "center",
+    paddingHorizontal: 16,
+    backgroundColor: "#FFFFFF",
+    borderBottomWidth: 1,
+    borderBottomColor: "#EAEAEA",
+  },
+  searchSummaryText: {
+    fontSize: 13,
+    fontWeight: "400",
+    color: "#74797D",
+  },
   sectionScroll: {
     flex: 1,
     backgroundColor: "#F6F7F7",
@@ -681,26 +893,38 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: "flex-end",
   },
-  fruitSection: {
-    paddingTop: 24,
+  emptySearch: {
+    flex: 1,
+    minHeight: 280,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 24,
+  },
+  emptySearchTitle: {
+    marginTop: 12,
+    fontSize: 17,
+    fontWeight: "600",
+    color: "#313437",
+  },
+  emptySearchText: {
+    marginTop: 5,
+    fontSize: 14,
+    lineHeight: 20,
+    color: "#858A8E",
+    textAlign: "center",
   },
   sectionTitle: {
     paddingHorizontal: 16,
+    paddingTop: 24,
     marginBottom: 12,
     fontSize: 20,
     fontWeight: "700",
     color: "#1A1A1A",
   },
-  productGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    paddingHorizontal: 16,
-    paddingBottom: 8,
-    columnGap: 8,
-    rowGap: 10,
-  },
   productGridItem: {
-    width: "31.8%",
+    width: "100%",
+    paddingHorizontal: 4,
+    paddingBottom: 10,
   },
   gridProductCard: {
     width: "100%",
