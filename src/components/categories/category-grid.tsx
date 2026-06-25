@@ -8,14 +8,12 @@ import {
   View,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
 
 export type Category = {
   id: string;
   slug: string;
   name: string;
-  image?: ImageSourcePropType;
-  icon?: keyof typeof Ionicons.glyphMap;
+  image: ImageSourcePropType;
 };
 
 export const CATEGORIES: Category[] = [
@@ -32,18 +30,19 @@ export const CATEGORIES: Category[] = [
   { id: "11", slug: "household", name: "Household", image: require("../../../public/categories/category thumbnails/Cleaning.webp") },
   { id: "12", slug: "baby", name: "Baby", image: require("../../../public/categories/category thumbnails/Baby.webp") },
   { id: "13", slug: "pet", name: "Pet", image: require("../../../public/categories/category thumbnails/Pet.webp") },
-  { id: "14", slug: "health-and-beauty", name: "Health & Beauty", icon: "sparkles-outline" },
-  { id: "15", slug: "jam-honey-and-spreads", name: "Jam, Honey, Spreads", icon: "nutrition-outline" },
-  { id: "16", slug: "tea-coffee-and-hot-drinks", name: "Tea, Coffee, Hot Drinks", icon: "cafe-outline" },
-  { id: "17", slug: "rice-pasta-and-noodles", name: "Rice, Pasta, Noodles", icon: "restaurant-outline" },
-  { id: "18", slug: "sugar-flour-and-baking", name: "Sugar, Flour, Baking", icon: "scale-outline" },
-  { id: "19", slug: "ice-cream", name: "Ice Cream", icon: "ice-cream-outline" },
-  { id: "20", slug: "desserts", name: "Desserts", icon: "restaurant-outline" },
-  { id: "21", slug: "crisps-snacks-and-biscuits", name: "Crisps, Snacks, Biscuits", icon: "fast-food-outline" },
-  { id: "22", slug: "cooking-sauces-and-ingredients", name: "Cooking Sauces & Ingredients", icon: "flask-outline" },
-  { id: "23", slug: "table-sauces-and-condiments", name: "Table Sauces & Condiments", icon: "water-outline" },
-  { id: "24", slug: "cans-and-tins", name: "Cans & Tins", icon: "cube-outline" },
-  { id: "25", slug: "cereal-and-cereal-bars", name: "Cereal & Cereal Bars", icon: "sunny-outline" },
+  { id: "14", slug: "health-and-beauty", name: "Health & Beauty", image: require("../../../public/categories/category thumbnails/Health and  Beauty.webp") },
+  { id: "15", slug: "jam-honey-and-spreads", name: "Jam, Honey, Spreads", image: require("../../../public/categories/category thumbnails/Jams , honey , speards.webp") },
+  { id: "16", slug: "tea-coffee-and-hot-drinks", name: "Tea, Coffee, Hot Drinks", image: require("../../../public/categories/category thumbnails/Tea & Coffee.webp") },
+  { id: "17", slug: "rice-pasta-and-noodles", name: "Rice, Pasta, Noodles", image: require("../../../public/categories/category thumbnails/rice , pasta.webp") },
+  { id: "18", slug: "sugar-flour-and-baking", name: "Sugar, Flour, Baking", image: require("../../../public/categories/category thumbnails/Sugar, Flour, Baking.webp") },
+  { id: "19", slug: "ice-cream", name: "Ice Cream", image: require("../../../public/categories/category thumbnails/ice cream.webp") },
+  { id: "20", slug: "desserts", name: "Desserts", image: require("../../../public/categories/category thumbnails/Desserts.webp") },
+  { id: "21", slug: "crisps-snacks-and-biscuits", name: "Crisps, Snacks, Biscuits", image: require("../../../public/categories/category thumbnails/Crisp and bisquites.webp") },
+  { id: "22", slug: "cooking-sauces-and-ingredients", name: "Cooking Sauces & Ingredients", image: require("../../../public/categories/category thumbnails/Sauces and oils.webp") },
+  { id: "23", slug: "table-sauces-and-condiments", name: "Table Sauces & Condiments", image: require("../../../public/categories/category thumbnails/Table Sauces & Condiments.webp") },
+  { id: "24", slug: "cans-and-tins", name: "Cans & Tins", image: require("../../../public/categories/category thumbnails/Cans & Tins.webp") },
+  { id: "25", slug: "cereal-and-cereal-bars", name: "Cereal & Cereal Bars", image: require("../../../public/categories/category thumbnails/Cereals.webp") },
+  { id: "26", slug: "spices", name: "Spices", image: require("../../../public/categories/category thumbnails/Spices.webp") },
 ];
 
 const COLUMNS = 3;
@@ -65,15 +64,7 @@ function CategoryCard({ item }: { item: Category }) {
       accessibilityLabel={`Open ${item.name} category`}
     >
       <View style={styles.imageFrame}>
-        {item.image ? (
-          <Image source={item.image} style={styles.image} resizeMode="cover" />
-        ) : (
-          <Ionicons
-            name={item.icon ?? "basket-outline"}
-            size={46}
-            color="#38a3a5"
-          />
-        )}
+        <Image source={item.image} style={styles.image} resizeMode="cover" />
       </View>
       <View style={styles.labelFrame}>
         <Text style={styles.name} numberOfLines={2}>{item.name}</Text>

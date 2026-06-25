@@ -3,13 +3,15 @@ import { useState } from "react";
 import {
   FlatList,
   Image,
+  StyleProp,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
+  ViewStyle,
 } from "react-native";
 
-type Product = {
+export type Product = {
   id: string;
   name: string;
   price: number;
@@ -73,50 +75,79 @@ function QuantityControl({
   qty,
   onAdd,
   onRemove,
+  compact = false,
 }: {
   qty: number;
   onAdd: () => void;
   onRemove: () => void;
+  compact?: boolean;
 }) {
   if (qty === 0) {
     return (
-      <TouchableOpacity style={styles.addButton} onPress={onAdd} activeOpacity={0.8}>
-        <Ionicons name="add" size={22} color="#38a3a5" />
+      <TouchableOpacity
+        style={[styles.addButton, compact && styles.compactAddButton]}
+        onPress={onAdd}
+        activeOpacity={0.8}
+      >
+        <Ionicons name="add" size={compact ? 19 : 22} color="#38a3a5" />
       </TouchableOpacity>
     );
   }
 
   return (
-    <View style={styles.qtyControl}>
-      <TouchableOpacity style={styles.qtyBtn} onPress={onRemove} activeOpacity={0.8}>
-        <Ionicons name={qty === 1 ? "trash-outline" : "remove"} size={20} color="#38a3a5" />
+    <View style={[styles.qtyControl, compact && styles.compactQtyControl]}>
+      <TouchableOpacity
+        style={[styles.qtyBtn, compact && styles.compactQtyBtn]}
+        onPress={onRemove}
+        activeOpacity={0.8}
+      >
+        <Ionicons
+          name={qty === 1 ? "trash-outline" : "remove"}
+          size={compact ? 17 : 20}
+          color="#38a3a5"
+        />
       </TouchableOpacity>
-      <Text style={styles.qtyText}>{qty}</Text>
-      <TouchableOpacity style={styles.qtyBtn} onPress={onAdd} activeOpacity={0.8}>
-        <Ionicons name="add" size={20} color="#38a3a5" />
+      <Text style={[styles.qtyText, compact && styles.compactQtyText]}>{qty}</Text>
+      <TouchableOpacity
+        style={[styles.qtyBtn, compact && styles.compactQtyBtn]}
+        onPress={onAdd}
+        activeOpacity={0.8}
+      >
+        <Ionicons name="add" size={compact ? 17 : 20} color="#38a3a5" />
       </TouchableOpacity>
     </View>
   );
 }
 
-function ProductCard({ item }: { item: Product }) {
+export function ProductCard({
+  item,
+  style,
+  compact = false,
+}: {
+  item: Product;
+  style?: StyleProp<ViewStyle>;
+  compact?: boolean;
+}) {
   const [qty, setQty] = useState(0);
   const hasDiscount = item.originalPrice != null;
 
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, style]}>
       {/* Image section with its own overflow clip for top corners */}
       <View style={styles.imageWrapper}>
         <Image
           source={{ uri: item.image }}
-          style={styles.image}
+          style={[styles.image, compact && styles.compactImage]}
           resizeMode="cover"
         />
       </View>
 
       {/* Card body */}
-      <View style={styles.cardBody}>
-        <Text style={styles.name} numberOfLines={3}>
+      <View style={[styles.cardBody, compact && styles.compactCardBody]}>
+        <Text
+          style={[styles.name, compact && styles.compactName]}
+          numberOfLines={compact ? 2 : 3}
+        >
           {item.name}
         </Text>
 
@@ -149,9 +180,10 @@ function ProductCard({ item }: { item: Product }) {
       </View>
 
       {/* Quantity control floating at the image/body junction, centered */}
-      <View style={styles.qtyOverlay}>
+      <View style={[styles.qtyOverlay, compact && styles.compactQtyOverlay]}>
         <QuantityControl
           qty={qty}
+          compact={compact}
           onAdd={() => setQty((q) => q + 1)}
           onRemove={() => setQty((q) => Math.max(0, q - 1))}
         />
@@ -223,6 +255,9 @@ const styles = StyleSheet.create({
     height: IMAGE_HEIGHT,
     backgroundColor: "#EFF8F8",
   },
+  compactImage: {
+    height: 118,
+  },
   unitRow: {
     height: 16,
     justifyContent: "center",
@@ -248,6 +283,11 @@ const styles = StyleSheet.create({
     paddingTop: CONTROL_HEIGHT / 2 - CONTROL_UPSHIFT + 4,
     gap: 4,
   },
+  compactCardBody: {
+    padding: 8,
+    paddingTop: 14,
+    gap: 3,
+  },
   unit: {
     fontSize: 11,
     color: "#AAAAAA",
@@ -259,6 +299,11 @@ const styles = StyleSheet.create({
     color: "#1A1A1A",
     lineHeight: 19,
     minHeight: 57,
+  },
+  compactName: {
+    minHeight: 38,
+    fontSize: 12,
+    lineHeight: 17,
   },
   priceRow: {
     flexDirection: "row",
@@ -284,6 +329,11 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
     zIndex: 2,
   },
+  compactQtyOverlay: {
+    top: 94,
+    left: 8,
+    right: 8,
+  },
   addButton: {
     width: CONTROL_HEIGHT,
     height: CONTROL_HEIGHT,
@@ -293,6 +343,11 @@ const styles = StyleSheet.create({
     borderColor: "#D0E8E8",
     alignItems: "center",
     justifyContent: "center",
+  },
+  compactAddButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
   },
   qtyControl: {
     flexDirection: "row",
@@ -306,11 +361,19 @@ const styles = StyleSheet.create({
     height: CONTROL_HEIGHT,
     alignSelf: "stretch",
   },
+  compactQtyControl: {
+    height: 32,
+    borderRadius: 16,
+  },
   qtyBtn: {
     width: 44,
     height: CONTROL_HEIGHT,
     alignItems: "center",
     justifyContent: "center",
+  },
+  compactQtyBtn: {
+    width: 30,
+    height: 32,
   },
   qtyText: {
     flex: 1,
@@ -318,5 +381,8 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#1A1A1A",
     textAlign: "center",
+  },
+  compactQtyText: {
+    fontSize: 12,
   },
 });
