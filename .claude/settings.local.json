@@ -6,7 +6,9 @@
       "Bash(Select-Object -ExpandProperty FullName)",
       "Bash(New-Item -ItemType Directory -Force \"C:\\\\Users\\\\90549\\\\Desktop\\\\Coding\\\\expo\\\\sebet\\\\src\\\\components\\\\home\")",
       "Bash(Out-Null)",
-      "Bash(Write-Output \"Directory created\")"
+      "Bash(Write-Output \"Directory created\")",
+      "Bash(npx expo-router *)",
+      "Bash(node -e \"const r = require\\('./node_modules/react-native-reanimated/package.json'\\); console.log\\(r.version\\)\")"
     ]
   }
 }

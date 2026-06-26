@@ -1,89 +1,40 @@
-import { useState } from "react";
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import BasketCard, { BasketItem } from "../../components/basket/basket-card";
-import PeopleAlsoAdded from "../../components/basket/people-also-added";
-import SavingsAndOffers from "../../components/basket/savings-and-offers";
-import Summary from "../../components/basket/summary";
+import { useState } from "react";
+import {
+  Image,
+  LayoutChangeEvent,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  BASKETS,
+  getBasketFulfillmentLabel,
+  getBasketSubtotal,
+  getOrderedBaskets,
+} from "../../data/baskets";
 
-const BASKET_ITEMS: BasketItem[] = [
-  {
-    id: "1",
-    name: "Whole Milk",
-    unit: "1L",
-    price: 1.49,
-    image: "https://placehold.co/120x120/F5F5F5/999?text=+",
-    initialQty: 2,
-  },
-  {
-    id: "2",
-    name: "Seeded Whole Grain Sourdough Loaf",
-    unit: "800g",
-    price: 2.99,
-    image: "https://placehold.co/120x120/F5F5F5/999?text=+",
-    initialQty: 1,
-  },
-  {
-    id: "3",
-    name: "Lurpak Butter Spreadable",
-    unit: "500g",
-    price: 2.49,
-    image: "https://placehold.co/120x120/F5F5F5/999?text=+",
-    initialQty: 1,
-  },
-  {
-    id: "4",
-    name: "Organic Free-Range Large Eggs",
-    unit: "12 pack",
-    price: 3.29,
-    image: "https://placehold.co/120x120/F5F5F5/999?text=+",
-    initialQty: 1,
-  },
-  {
-    id: "5",
-    name: "Tropicana Orange Juice",
-    unit: "1.4L",
-    price: 1.99,
-    image: "https://placehold.co/120x120/F5F5F5/999?text=+",
-    initialQty: 3,
-  },
-];
+// 6 circles must fit the available span.
+// step = circleSize * STEP_RATIO
+// totalWidth = circleSize + step * 5 = circleSize * (1 + STEP_RATIO * 5)
+// → circleSize = containerWidth / (1 + STEP_RATIO * 5)
+const STEP_RATIO = 0.82;
+const SLOTS = 6; // the span is always sized for 6 circles
+const MAX_VISIBLE_ITEMS = 5; // show 5 products + "+N" when items > 6
+// Right margin reserves space equal to the trash button + a safe gap,
+// so circles never visually reach the trash icon area.
+const TRASH_RESERVE = 44;
 
-const SUBTOTAL = 22.63;
-const SAVINGS = 2.73;
-const DELIVERY_FEE = 2;
-
-function getPromoDiscount(promoCode: string, basketTotal: number) {
-  switch (promoCode) {
-    case "SAVE10":
-      return Math.round(basketTotal * 0.1 * 100) / 100;
-    case "WELCOME5":
-      return Math.min(5, basketTotal);
-    default:
-      return 0;
-  }
-}
-
-export default function BasketScreen() {
+export default function BasketsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const [query, setQuery] = useState("");
-  const [appliedPromo, setAppliedPromo] = useState("");
-
-  const filtered = query.trim()
-    ? BASKET_ITEMS.filter((item) =>
-        item.name.toLowerCase().includes(query.toLowerCase())
-      )
-    : BASKET_ITEMS;
-
-  const basketTotalAfterItemSavings = Math.max(0, SUBTOTAL - SAVINGS);
-  const promoDiscount = getPromoDiscount(appliedPromo, basketTotalAfterItemSavings);
-  const totalSavings = SAVINGS + promoDiscount;
-  const deliveryFee = appliedPromo === "FREESHIP" ? 0 : DELIVERY_FEE;
-  const promoSavings = appliedPromo === "FREESHIP" ? DELIVERY_FEE : promoDiscount;
-  const orderTotal = Math.max(0, basketTotalAfterItemSavings - promoDiscount) + deliveryFee;
+  const [baskets, setBaskets] = useState(BASKETS);
+  const orderedBaskets = getOrderedBaskets(baskets);
+  const [containerWidths, setContainerWidths] = useState<Record<string, number>>({});
 
   return (
     <View style={styles.container}>
@@ -91,72 +42,176 @@ export default function BasketScreen() {
         <TouchableOpacity activeOpacity={0.7} onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={26} color="#1A1A1A" />
         </TouchableOpacity>
-        <Text style={styles.title}>My Basket</Text>
+        <Text style={styles.title}>My Baskets</Text>
         <View style={styles.headerSpacer} />
       </View>
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[styles.scroll, { paddingBottom: 160 + insets.bottom }]}
+        contentContainerStyle={[
+          styles.content,
+          { paddingBottom: insets.bottom + 24 },
+        ]}
       >
-        <View style={styles.unavailableBox}>
-          <View style={styles.unavailableText}>
-            <Text style={styles.unavailableTitle}>If any items are unavailable</Text>
-            <Text style={styles.unavailableSubtitle}>Remove if unavailable</Text>
-          </View>
-          <TouchableOpacity activeOpacity={0.7}>
-            <Text style={styles.changeText}>Change</Text>
-          </TouchableOpacity>
-        </View>
+{orderedBaskets.map((basket) => {
+          const subtotal = getBasketSubtotal(basket);
+          const hasMore = basket.items.length > 6;
+          const visibleItems = basket.items.slice(
+            0,
+            hasMore ? MAX_VISIBLE_ITEMS : basket.items.length,
+          );
+          const extraCount = hasMore ? basket.items.length - MAX_VISIBLE_ITEMS : 0;
 
-        <View style={styles.box}>
-          {/* Search bar */}
-          <View style={styles.searchWrapper}>
-            <View style={styles.searchRow}>
-              <Ionicons name="search-outline" size={20} color="#AAAAAA" />
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Search or add items…"
-                placeholderTextColor="#AAAAAA"
-                value={query}
-                onChangeText={setQuery}
-                returnKeyType="search"
-                clearButtonMode="while-editing"
-              />
+          const containerWidth = containerWidths[basket.id] ?? 0;
+          const circleSize =
+            containerWidth > 0
+              ? containerWidth / (1 + STEP_RATIO * (SLOTS - 1))
+              : 0;
+          const step = circleSize * STEP_RATIO;
+
+          return (
+            <View key={basket.id} style={styles.card}>
+              <View style={styles.cardTopRow}>
+                <Text style={styles.cardTitle}>
+                  {getBasketFulfillmentLabel(basket)}
+                </Text>
+                <TouchableOpacity
+                  style={styles.deleteButton}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Delete ${getBasketFulfillmentLabel(basket)} basket`}
+                  onPress={() =>
+                    setBaskets((current) =>
+                      current.filter((item) => item.id !== basket.id),
+                    )
+                  }
+                >
+                  <Ionicons name="trash-outline" size={24} color="#18C3B2" />
+                </TouchableOpacity>
+              </View>
+
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() =>
+                  router.push({
+                    pathname: "/basket/[id]",
+                    params: { id: basket.id },
+                  })
+                }
+              >
+                {/* marginRight reserves the trash icon column so circles never reach it */}
+                <View
+                  style={[styles.circlesContainer, { height: circleSize ? circleSize + 8 : 0 }]}
+                  onLayout={(e: LayoutChangeEvent) => {
+                    const width = e?.nativeEvent?.layout?.width;
+                    if (width) {
+                      setContainerWidths((prev) => ({
+                        ...prev,
+                        [basket.id]: width,
+                      }));
+                    }
+                  }}
+                >
+                  {circleSize > 0 &&
+                    visibleItems.map((item, index) => {
+                      const qty = item.initialQty ?? 1;
+                      return (
+                        <View
+                          key={item.id}
+                          style={{
+                            position: "absolute",
+                            top: 0,
+                            left: index * step,
+                            width: circleSize,
+                            height: circleSize,
+                            borderRadius: circleSize / 2,
+                            backgroundColor: "#FFFFFF",
+                            padding: 4,
+                          }}
+                        >
+                          <Image
+                            source={{ uri: item.image }}
+                            resizeMode="contain"
+                            style={[
+                              styles.circle,
+                              {
+                                width: circleSize - 8,
+                                height: circleSize - 8,
+                                borderRadius: (circleSize - 8) / 2,
+                              },
+                            ]}
+                          />
+                          {qty > 1 && (
+                            <View style={styles.qtyBadge}>
+                              <Text style={styles.qtyBadgeText}>{qty}</Text>
+                            </View>
+                          )}
+                        </View>
+                      );
+                    })}
+                  {circleSize > 0 && hasMore && (
+                    <View
+                      style={{
+                        position: "absolute",
+                        top: 0,
+                        left: MAX_VISIBLE_ITEMS * step,
+                        width: circleSize,
+                        height: circleSize,
+                        borderRadius: circleSize / 2,
+                        backgroundColor: "#FFFFFF",
+                        padding: 4,
+                      }}
+                    >
+                      <View
+                        style={[
+                          styles.circle,
+                          styles.moreCircle,
+                          {
+                            width: circleSize - 8,
+                            height: circleSize - 8,
+                            borderRadius: (circleSize - 8) / 2,
+                          },
+                        ]}
+                      >
+                        <Text style={styles.moreText}>+{extraCount}</Text>
+                      </View>
+                    </View>
+                  )}
+                </View>
+
+                <View style={styles.priceRow}>
+                  <Text style={styles.total}>£{(subtotal - basket.savings).toFixed(2)}</Text>
+                  {basket.savings > 0 && (
+                    <Text style={styles.originalPrice}>£{subtotal.toFixed(2)}</Text>
+                  )}
+                </View>
+
+                <View style={styles.cardFooter}>
+                  <View style={styles.footerLeft}>
+                    <Text style={styles.itemCount}>
+                      {basket.items.length}{" "}
+                      {basket.items.length === 1 ? "item" : "items"}
+                    </Text>
+                    {basket.fulfillmentType === "now" && (
+                      <>
+                        <Text style={styles.dot}>·</Text>
+                        <Text style={styles.etaText}>30–40 min</Text>
+                      </>
+                    )}
+                    {basket.fulfillmentType === "pickup" && (
+                      <>
+                        <Text style={styles.dot}>·</Text>
+                        <Text style={styles.etaText}>25–30 min</Text>
+                      </>
+                    )}
+                  </View>
+                  <Ionicons name="chevron-forward" size={22} color="#38a3a5" />
+                </View>
+              </TouchableOpacity>
             </View>
-          </View>
-
-          <View style={styles.divider} />
-
-          {filtered.map((item) => (
-            <BasketCard key={item.id} item={item} />
-          ))}
-        </View>
-
-        <PeopleAlsoAdded />
-        <SavingsAndOffers
-          appliedPromo={appliedPromo}
-          promoSavings={promoSavings}
-          onApplyPromo={setAppliedPromo}
-        />
-        <Summary
-          subtotal={SUBTOTAL}
-          savings={totalSavings}
-          deliveryFee={deliveryFee}
-          originalDeliveryFee={DELIVERY_FEE}
-          total={orderTotal}
-        />
+          );
+        })}
       </ScrollView>
-
-      <View style={[styles.checkoutBar, { paddingBottom: insets.bottom + 12 }]}>
-        <View style={styles.totalRow}>
-          <Text style={styles.totalLabel}>Order Total</Text>
-          <Text style={styles.totalValue}>£{orderTotal.toFixed(2)}</Text>
-        </View>
-        <TouchableOpacity style={styles.checkoutBtn} activeOpacity={0.85}>
-          <Text style={styles.checkoutText}>Go To Checkout</Text>
-        </TouchableOpacity>
-      </View>
     </View>
   );
 }
@@ -168,14 +223,19 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: "row",
-    alignItems: "baseline",
+    alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingTop: 16,
     paddingBottom: 12,
-    backgroundColor: "#fff",
+    backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
     borderBottomColor: "#F0F0F0",
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 2,
+    zIndex: 1,
   },
   title: {
     flex: 1,
@@ -187,105 +247,120 @@ const styles = StyleSheet.create({
   headerSpacer: {
     width: 26,
   },
-  scroll: {
+  content: {
     padding: 16,
-    paddingBottom: 32,
+    gap: 12,
   },
-  unavailableBox: {
+card: {
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#A8E6E0",
+    borderRadius: 6,
+    backgroundColor: "#FFFFFF",
+  },
+  cardTopRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: "#EEEEEE",
-    backgroundColor: "#fff",
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    marginBottom: 12,
   },
-  unavailableText: {
-    gap: 3,
-  },
-  unavailableTitle: {
-    fontSize: 13,
-    fontWeight: "600",
+  cardTitle: {
+    fontSize: 17,
+    fontWeight: "700",
     color: "#1A1A1A",
   },
-  unavailableSubtitle: {
-    fontSize: 11,
-    color: "#AAAAAA",
-    fontWeight: "500",
+  deleteButton: {
+    width: 36,
+    height: 36,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  changeText: {
+  circlesContainer: {
+    marginTop: 16,
+    marginRight: TRASH_RESERVE,
+    position: "relative",
+  },
+  circle: {
+    backgroundColor: "#FFFFFF",
+    borderWidth: 2,
+    borderColor: "#F0F0F0",
+  },
+  qtyBadge: {
+    position: "absolute",
+    bottom: -5,
+    right: 12,
+    minWidth: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 3,
+    borderWidth: 1.5,
+    borderColor: "#FFFFFF",
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  qtyBadgeText: {
     fontSize: 13,
+    fontWeight: "700",
+    color: "#0C5E55",
+  },
+  moreCircle: {
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  moreText: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#0C5E55",
+  },
+  priceRow: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    gap: 8,
+    marginTop: 14,
+  },
+  total: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#0C5E55",
+  },
+  originalPrice: {
+    fontSize: 18,
     fontWeight: "400",
-    color: "#38a3a5",
+    color: "#0C5E55",
+    textDecorationLine: "line-through",
   },
-  box: {
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: "#EEEEEE",
-    overflow: "hidden",
-    backgroundColor: "#fff",
-  },
-  searchWrapper: {
-    padding: 12,
-  },
-  searchRow: {
+  cardFooter: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    backgroundColor: "#F5F5F5",
-    borderRadius: 16,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-    color: "#1A1A1A",
-    padding: 0,
-  },
-  checkoutBar: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: "#fff",
-    paddingHorizontal: 16,
-    paddingTop: 20,
+    justifyContent: "space-between",
+    marginTop: 12,
+    paddingTop: 14,
     borderTopWidth: 1,
     borderTopColor: "#F0F0F0",
   },
-  totalRow: {
+  footerLeft: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 12,
+    gap: 8,
   },
-  totalLabel: {
-    fontSize: 15,
+  itemCount: {
+    fontSize: 13,
     fontWeight: "400",
-    color: "#1A1A1A",
+    color: "#18C3B2",
   },
-  totalValue: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#1A1A1A",
+  dot: {
+    fontSize: 13,
+    color: "#AAAAAA",
   },
-  checkoutBtn: {
-    backgroundColor: "#38a3a5",
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: "center",
-  },
-  checkoutText: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#fff",
-  },
-  divider: {
-    height: 1,
-    backgroundColor: "#F0F0F0",
+  etaText: {
+    fontSize: 13,
+    fontWeight: "400",
+    color: "#AAAAAA",
   },
 });
